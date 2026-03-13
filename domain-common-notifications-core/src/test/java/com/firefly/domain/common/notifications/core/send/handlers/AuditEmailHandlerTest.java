@@ -15,7 +15,6 @@ import reactor.test.StepVerifier;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,7 +43,7 @@ class AuditEmailHandlerTest {
 
         EmailResponseDTO auditResponse = new EmailResponseDTO();
         auditResponse.setMessageId(expectedId.toString());
-        when(emailNotificationsApi.sendEmail(any(), anyString()))
+        when(emailNotificationsApi.sendEmail(any()))
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))
@@ -64,7 +63,7 @@ class AuditEmailHandlerTest {
 
         EmailResponseDTO auditResponse = new EmailResponseDTO();
         auditResponse.setMessageId(null);
-        when(emailNotificationsApi.sendEmail(any(), anyString()))
+        when(emailNotificationsApi.sendEmail(any()))
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))

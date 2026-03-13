@@ -31,7 +31,7 @@ public class AuditEmailHandler extends CommandHandler<AuditEmailNotificationComm
                 .subject(cmd.getSubject())
                 .text(cmd.getBody());
 
-        return emailNotificationsApi.sendEmail(sdkRequest, cmd.getPartyId().toString())
+        return emailNotificationsApi.sendEmail(sdkRequest)
                 .flatMap(response -> {
                     if (response.getMessageId() != null) {
                         return Mono.just(UUID.fromString(response.getMessageId()));
