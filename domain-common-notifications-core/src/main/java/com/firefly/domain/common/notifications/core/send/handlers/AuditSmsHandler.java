@@ -30,7 +30,7 @@ public class AuditSmsHandler extends CommandHandler<AuditSmsNotificationCommand,
                 .phoneNumber(cmd.getRecipientPhone())
                 .message(cmd.getMessage());
 
-        return smsNotificationsApi.sendSMS(sdkRequest)
+        return smsNotificationsApi.sendSMS(sdkRequest, UUID.randomUUID().toString())
                 .flatMap(response -> {
                     if (response.getMessageId() != null) {
                         return Mono.just(UUID.fromString(response.getMessageId()));

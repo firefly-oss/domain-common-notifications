@@ -42,7 +42,7 @@ class AuditSmsHandlerTest {
 
         SMSResponseDTO auditResponse = new SMSResponseDTO();
         auditResponse.setMessageId(expectedId.toString());
-        when(smsNotificationsApi.sendSMS(any()))
+        when(smsNotificationsApi.sendSMS(any(), any()))
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))
@@ -61,7 +61,7 @@ class AuditSmsHandlerTest {
 
         SMSResponseDTO auditResponse = new SMSResponseDTO();
         auditResponse.setMessageId(null);
-        when(smsNotificationsApi.sendSMS(any()))
+        when(smsNotificationsApi.sendSMS(any(), any()))
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))

@@ -43,7 +43,7 @@ class AuditEmailHandlerTest {
 
         EmailResponseDTO auditResponse = new EmailResponseDTO();
         auditResponse.setMessageId(expectedId.toString());
-        when(emailNotificationsApi.sendEmail(any()))
+        when(emailNotificationsApi.sendEmail(any(), any()))
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))
@@ -63,7 +63,7 @@ class AuditEmailHandlerTest {
 
         EmailResponseDTO auditResponse = new EmailResponseDTO();
         auditResponse.setMessageId(null);
-        when(emailNotificationsApi.sendEmail(any()))
+        when(emailNotificationsApi.sendEmail(any(), any()))
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))
