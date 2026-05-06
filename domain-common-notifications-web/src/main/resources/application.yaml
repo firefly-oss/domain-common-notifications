@@ -53,7 +53,7 @@ server:
 
 api-configuration:
   common-platform.notification-services:
-    base-path: http://localhost:8095
+    base-path: ${ENDPOINT_CORE_NOTIFICATION_SERVICES:http://localhost:8095}
 
 springdoc:
   api-docs:
