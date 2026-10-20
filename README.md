@@ -194,9 +194,9 @@ The `domain-common-notifications-sdk` module generates a reactive Java client SD
 
 | Package | Contents |
 |---------|----------|
-| `com.firefly.domain.common.notifications.sdk.api` | `NotificationsApi`, `NotificationPreferencesApi` -- typed API clients |
-| `com.firefly.domain.common.notifications.sdk.model` | `SendNotificationCommand`, `SendBulkNotificationCommand`, `NotificationDTO`, `NotificationPreferencesDTO` -- request/response models |
-| `com.firefly.domain.common.notifications.sdk.invoker` | `ApiClient` and authentication helpers |
+| `io.fireflysoftware.domain.common.notifications.sdk.api` | `NotificationsApi`, `NotificationPreferencesApi` -- typed API clients |
+| `io.fireflysoftware.domain.common.notifications.sdk.model` | `SendNotificationCommand`, `SendBulkNotificationCommand`, `NotificationDTO`, `NotificationPreferencesDTO` -- request/response models |
+| `io.fireflysoftware.domain.common.notifications.sdk.invoker` | `ApiClient` and authentication helpers |
 
 ### Usage
 
@@ -204,7 +204,7 @@ Add the SDK dependency to your consumer project:
 
 ```xml
 <dependency>
-    <groupId>com.firefly</groupId>
+    <groupId>io.fireflysoftware</groupId>
     <artifactId>domain-common-notifications-sdk</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
