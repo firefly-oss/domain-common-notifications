@@ -33,7 +33,7 @@ import org.springframework.web.reactive.config.EnableWebFlux;
                 )
         ),
         servers = {
-                @Server(url = "http://core.getfirefly.io/domain-common-notifications", description = "Development Environment"),
+                @Server(url = "https://openplatform.fireflysoftware.io/domain-common-notifications", description = "Development Environment"),
                 @Server(url = "/", description = "Local Development Environment")
         }
 )
