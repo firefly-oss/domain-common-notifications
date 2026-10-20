@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>domain-common-notifications-interfaces</artifactId>
+    <name>domain-common-notifications-interfaces</name>
 
     <properties>
         <maven.compiler.source>25</maven.compiler.source>

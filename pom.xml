@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>domain-common-notifications</artifactId>
+    <name>domain-common-notifications</name>
     <version>26.10.3</version>
     <packaging>pom</packaging>
     <modules>
