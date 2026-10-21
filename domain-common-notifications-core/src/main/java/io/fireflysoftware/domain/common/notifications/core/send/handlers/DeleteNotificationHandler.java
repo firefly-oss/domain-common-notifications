@@ -17,26 +17,33 @@
 
 package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
+import io.fireflysoftware.domain.common.notifications.core.send.NotificationNotFoundException;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.DeleteNotificationCommand;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import lombok.extern.slf4j.Slf4j;
 import org.fireflyframework.cqrs.annotations.CommandHandlerComponent;
 import org.fireflyframework.cqrs.command.CommandHandler;
 import reactor.core.publisher.Mono;
 
 /**
- * Deletes a specific notification.
- * <p>
- * TODO: Replace stub with real persistence when notification read-model is available.
- * </p>
+ * Deletes one previously sent message for the owning party.
  */
 @CommandHandlerComponent
 @Slf4j
 public class DeleteNotificationHandler extends CommandHandler<DeleteNotificationCommand, Void> {
 
+    private final SentNotificationStore sentNotifications;
+
+    public DeleteNotificationHandler(SentNotificationStore sentNotifications) {
+        this.sentNotifications = sentNotifications;
+    }
+
     @Override
     protected Mono<Void> doHandle(DeleteNotificationCommand cmd) {
         log.info("Deleting notification: notificationId={}, partyId={}", cmd.getNotificationId(), cmd.getPartyId());
-        // TODO: Replace stub with core SDK call when notification read-model is available
+        if (!sentNotifications.delete(cmd.getNotificationId(), cmd.getPartyId())) {
+            return Mono.error(new NotificationNotFoundException(cmd.getNotificationId()));
+        }
         return Mono.empty();
     }
 }

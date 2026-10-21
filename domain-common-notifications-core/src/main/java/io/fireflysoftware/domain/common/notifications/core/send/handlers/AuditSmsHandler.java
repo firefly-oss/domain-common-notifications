@@ -19,6 +19,7 @@ package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
 import io.fireflysoftware.common.platform.notification.services.sdk.api.SmsNotificationsApi;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.AuditSmsNotificationCommand;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import lombok.extern.slf4j.Slf4j;
 import org.fireflyframework.cqrs.annotations.CommandHandlerComponent;
 import org.fireflyframework.cqrs.command.CommandHandler;
@@ -26,19 +27,22 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+import static io.fireflysoftware.domain.common.notifications.core.utils.constants.NotificationConstants.CHANNEL_SMS;
+
 /**
- * Records an SMS notification in the core audit database via
- * {@link SmsNotificationsApi}. Receives the {@link io.fireflysoftware.domain.common.notifications.core.send.model.DeliveryResult}
- * from the delivery step so the audit record reflects actual delivery outcome.
+ * Sends the SMS through the notification core, then keeps the accepted message
+ * so inbox reads can return it. The core itself only sends.
  */
 @CommandHandlerComponent
 @Slf4j
 public class AuditSmsHandler extends CommandHandler<AuditSmsNotificationCommand, UUID> {
 
     private final SmsNotificationsApi smsNotificationsApi;
+    private final SentNotificationStore sentNotifications;
 
-    public AuditSmsHandler(SmsNotificationsApi smsNotificationsApi) {
+    public AuditSmsHandler(SmsNotificationsApi smsNotificationsApi, SentNotificationStore sentNotifications) {
         this.smsNotificationsApi = smsNotificationsApi;
+        this.sentNotifications = sentNotifications;
     }
 
     @Override
@@ -49,11 +53,20 @@ public class AuditSmsHandler extends CommandHandler<AuditSmsNotificationCommand,
 
         return smsNotificationsApi.sendSMS(sdkRequest, UUID.randomUUID().toString())
                 .flatMap(response -> {
-                    if (response.getMessageId() != null) {
-                        return Mono.just(UUID.fromString(response.getMessageId()));
+                    if (response.getMessageId() == null) {
+                        return Mono.error(new IllegalStateException(
+                                "SMS audit returned no notification identifier for partyId=" + cmd.getPartyId()));
                     }
-                    return Mono.error(new IllegalStateException(
-                            "SMS audit returned no notification identifier for partyId=" + cmd.getPartyId()));
+                    UUID notificationId = UUID.fromString(response.getMessageId());
+                    if (accepted(response.getStatus())) {
+                        sentNotifications.recordSent(
+                                notificationId, cmd.getPartyId(), CHANNEL_SMS, null, cmd.getMessage());
+                    }
+                    return Mono.just(notificationId);
                 });
+    }
+
+    private static boolean accepted(Object status) {
+        return status == null || !"FAILED".equalsIgnoreCase(String.valueOf(status));
     }
 }

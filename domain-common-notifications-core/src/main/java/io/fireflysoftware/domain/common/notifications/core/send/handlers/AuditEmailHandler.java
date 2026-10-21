@@ -19,6 +19,7 @@ package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
 import io.fireflysoftware.common.platform.notification.services.sdk.api.EmailNotificationsApi;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.AuditEmailNotificationCommand;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import lombok.extern.slf4j.Slf4j;
 import org.fireflyframework.cqrs.annotations.CommandHandlerComponent;
 import org.fireflyframework.cqrs.command.CommandHandler;
@@ -26,19 +27,22 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+import static io.fireflysoftware.domain.common.notifications.core.utils.constants.NotificationConstants.CHANNEL_EMAIL;
+
 /**
- * Records an email notification in the core audit database via
- * {@link EmailNotificationsApi}. Receives the {@link io.fireflysoftware.domain.common.notifications.core.send.model.DeliveryResult}
- * from the delivery step so the audit record reflects actual delivery outcome.
+ * Sends the email through the notification core, then keeps the accepted message
+ * so inbox reads can return it. The core itself only sends.
  */
 @CommandHandlerComponent
 @Slf4j
 public class AuditEmailHandler extends CommandHandler<AuditEmailNotificationCommand, UUID> {
 
     private final EmailNotificationsApi emailNotificationsApi;
+    private final SentNotificationStore sentNotifications;
 
-    public AuditEmailHandler(EmailNotificationsApi emailNotificationsApi) {
+    public AuditEmailHandler(EmailNotificationsApi emailNotificationsApi, SentNotificationStore sentNotifications) {
         this.emailNotificationsApi = emailNotificationsApi;
+        this.sentNotifications = sentNotifications;
     }
 
     @Override
@@ -50,11 +54,20 @@ public class AuditEmailHandler extends CommandHandler<AuditEmailNotificationComm
 
         return emailNotificationsApi.sendEmail(sdkRequest, UUID.randomUUID().toString())
                 .flatMap(response -> {
-                    if (response.getMessageId() != null) {
-                        return Mono.just(UUID.fromString(response.getMessageId()));
+                    if (response.getMessageId() == null) {
+                        return Mono.error(new IllegalStateException(
+                                "Email audit returned no notification identifier for partyId=" + cmd.getPartyId()));
                     }
-                    return Mono.error(new IllegalStateException(
-                            "Email audit returned no notification identifier for partyId=" + cmd.getPartyId()));
+                    UUID notificationId = UUID.fromString(response.getMessageId());
+                    if (accepted(response.getStatus())) {
+                        sentNotifications.recordSent(
+                                notificationId, cmd.getPartyId(), CHANNEL_EMAIL, cmd.getSubject(), cmd.getBody());
+                    }
+                    return Mono.just(notificationId);
                 });
+    }
+
+    private static boolean accepted(Object status) {
+        return status == null || !"FAILED".equalsIgnoreCase(String.valueOf(status));
     }
 }

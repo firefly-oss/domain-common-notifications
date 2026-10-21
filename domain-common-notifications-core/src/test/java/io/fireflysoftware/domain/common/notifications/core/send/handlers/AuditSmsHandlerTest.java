@@ -21,6 +21,7 @@ import io.fireflysoftware.common.platform.notification.services.sdk.api.SmsNotif
 import io.fireflysoftware.common.platform.notification.services.sdk.model.SMSResponseDTO;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.AuditSmsNotificationCommand;
 import io.fireflysoftware.domain.common.notifications.core.send.model.DeliveryResult;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,7 @@ import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -39,19 +41,22 @@ class AuditSmsHandlerTest {
 
     @Mock private SmsNotificationsApi smsNotificationsApi;
 
+    private SentNotificationStore sentNotifications;
     private AuditSmsHandler handler;
 
     @BeforeEach
     void setUp() {
-        handler = new AuditSmsHandler(smsNotificationsApi);
+        sentNotifications = new SentNotificationStore();
+        handler = new AuditSmsHandler(smsNotificationsApi, sentNotifications);
     }
 
     @Test
     void doHandle_auditSucceeds_returnsNotificationId() {
         UUID expectedId = UUID.randomUUID();
+        UUID partyId = UUID.randomUUID();
 
         AuditSmsNotificationCommand cmd = AuditSmsNotificationCommand.builder()
-                .partyId(UUID.randomUUID())
+                .partyId(partyId)
                 .recipientPhone("+34612345678")
                 .message("Your verification code is 1234")
                 .deliveryResult(DeliveryResult.success("provider-msg-id"))
@@ -65,6 +70,12 @@ class AuditSmsHandlerTest {
         StepVerifier.create(handler.doHandle(cmd))
                 .expectNext(expectedId)
                 .verifyComplete();
+
+        assertThat(sentNotifications.find(expectedId)).get().satisfies(stored -> {
+            assertThat(stored.getPartyId()).isEqualTo(partyId);
+            assertThat(stored.getChannel()).isEqualTo("SMS");
+            assertThat(stored.getBody()).isEqualTo("Your verification code is 1234");
+        });
     }
 
     @Test

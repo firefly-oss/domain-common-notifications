@@ -18,22 +18,35 @@
 package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
 import io.fireflysoftware.domain.common.notifications.core.send.commands.MarkAllNotificationsReadCommand;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class MarkAllNotificationsReadHandlerTest {
 
-    private final MarkAllNotificationsReadHandler handler = new MarkAllNotificationsReadHandler();
+    private final SentNotificationStore store = new SentNotificationStore();
+    private final MarkAllNotificationsReadHandler handler = new MarkAllNotificationsReadHandler(store);
 
     @Test
-    void doHandle_completesSuccessfully() {
+    void doHandle_marksEveryMessageForTheParty() {
+        UUID partyId = UUID.randomUUID();
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        store.recordSent(first, partyId, "EMAIL", "One", "Body");
+        store.recordSent(second, partyId, "SMS", null, "Two");
+
         var cmd = MarkAllNotificationsReadCommand.builder()
-                .partyId(UUID.randomUUID())
+                .partyId(partyId)
                 .build();
 
         StepVerifier.create(handler.doHandle(cmd))
                 .verifyComplete();
+
+        assertThat(store.find(first).orElseThrow().isRead()).isTrue();
+        assertThat(store.find(second).orElseThrow().isRead()).isTrue();
     }
 }

@@ -30,17 +30,16 @@ Repository: [https://github.com/firefly-oss/domain-common-notifications](https:/
 
 ## Overview
 
-`domain-common-notifications` provides a reactive REST API for sending notifications through email and SMS channels, querying notification history per party, managing read/unread state, and storing per-party channel preferences. Each send operation is orchestrated via a multi-step saga that routes the message to the correct channel, delivers it through the configured provider, and records an audit trail in the core platform.
+`domain-common-notifications` provides a reactive REST API for sending notifications through email and SMS channels, then reading that sent history per party. Each send operation is orchestrated via a multi-step saga that routes the message to the correct channel, delivers it through the configured provider, and records the message the notification core accepted. The notification core only sends, so this service keeps that outbound record and serves get, detail, mark read, mark all read, and delete from it.
 
 ### Key Features
 
 - **Multi-channel delivery** -- sends notifications via email (SendGrid) or SMS (Twilio), with automatic channel selection when set to `AUTO`.
 - **Saga-orchestrated workflows** -- the `SendNotificationSaga` routes, delivers, and audits each notification using the FireflyFramework Transactional Saga Engine with retry policies and compensating actions.
 - **Bulk send** -- dispatches multiple notifications in a single request, executing a saga per message.
-- **Notification lifecycle management** -- retrieve notifications by party (paginated), fetch individual notification details, mark single or all notifications as read, and delete notifications.
-- **Notification preferences** -- retrieve and update per-party channel preferences.
+- **Notification lifecycle management** -- retrieve notifications by party (paginated), fetch individual notification details, mark single or all notifications as read, and delete notifications. These operations read the messages this service already sent.
 - **Event-driven architecture** -- publishes domain events (`notification.delivered`, `notification.sent`) via Kafka through the FireflyFramework EDA module.
-- **CQRS** -- separates commands (send, mark-read, delete, update preferences) from queries (get by party, get detail, get preferences) through dedicated command and query buses.
+- **CQRS** -- separates commands (send, mark-read, delete) from queries (get by party, get detail) through dedicated command and query buses.
 - **Reactive, non-blocking architecture** -- built on Spring WebFlux and Project Reactor for high-throughput, low-latency processing.
 - **OpenAPI documentation** -- integrated Swagger UI via SpringDoc for interactive API exploration.
 - **Observability** -- Prometheus metrics via Micrometer and Spring Boot Actuator health/readiness/liveness endpoints.
@@ -163,13 +162,6 @@ All endpoints return reactive responses. The base API path prefix is `/api/v1/no
 | `POST` | `/api/v1/notifications/party/{partyId}/read-all` | Mark all notifications as read | Mark all notifications for a party as read |
 | `DELETE` | `/api/v1/notifications/{notificationId}` | Delete notification | Delete a specific notification (`partyId` query param required) |
 
-### Notification Preferences Endpoints (`/api/v1/notifications/preferences`)
-
-| Method | Path | Summary | Description |
-|--------|------|---------|-------------|
-| `GET` | `/api/v1/notifications/preferences/{partyId}` | Get notification preferences | Retrieve notification channel preferences for a party |
-| `PUT` | `/api/v1/notifications/preferences/{partyId}` | Update notification preferences | Update notification channel preferences for a party (body: `Map<String, Boolean>`) |
-
 ### Saga Workflow: SendNotificationSaga
 
 Each `POST /send` invocation triggers the following DAG-based saga:
@@ -194,8 +186,8 @@ The `domain-common-notifications-sdk` module generates a reactive Java client SD
 
 | Package | Contents |
 |---------|----------|
-| `io.fireflysoftware.domain.common.notifications.sdk.api` | `NotificationsApi`, `NotificationPreferencesApi` -- typed API clients |
-| `io.fireflysoftware.domain.common.notifications.sdk.model` | `SendNotificationCommand`, `SendBulkNotificationCommand`, `NotificationDTO`, `NotificationPreferencesDTO` -- request/response models |
+| `io.fireflysoftware.domain.common.notifications.sdk.api` | `NotificationsApi` -- typed API client |
+| `io.fireflysoftware.domain.common.notifications.sdk.model` | `SendNotificationCommand`, `SendBulkNotificationCommand`, `NotificationDTO` -- request/response models |
 | `io.fireflysoftware.domain.common.notifications.sdk.invoker` | `ApiClient` and authentication helpers |
 
 ### Usage
@@ -252,11 +244,9 @@ The project includes unit tests for the following components:
 | `core` | `DeleteNotificationHandlerTest` | Notification deletion |
 | `core` | `GetNotificationsByPartyHandlerTest` | Party notification retrieval |
 | `core` | `GetNotificationDetailHandlerTest` | Single notification detail |
-| `core` | `GetPreferencesHandlerTest` | Preferences retrieval |
-| `core` | `UpdatePreferencesHandlerTest` | Preferences update |
+| `core` | `SentNotificationStoreTest` | Sent-message inbox record |
 | `core` | `NotificationServiceImplTest` | Service orchestration logic |
 | `web` | `NotificationControllerTest` | Notification REST endpoints |
-| `web` | `PreferencesControllerTest` | Preferences REST endpoints |
 
 Dependencies for testing include `spring-boot-starter-test` and `reactor-test`.
 

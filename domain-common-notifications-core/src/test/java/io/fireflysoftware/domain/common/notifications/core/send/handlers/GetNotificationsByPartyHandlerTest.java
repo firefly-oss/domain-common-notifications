@@ -18,6 +18,7 @@
 package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
 import io.fireflysoftware.domain.common.notifications.core.send.queries.GetNotificationsByPartyQuery;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
@@ -27,10 +28,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GetNotificationsByPartyHandlerTest {
 
-    private final GetNotificationsByPartyHandler handler = new GetNotificationsByPartyHandler();
+    private final SentNotificationStore store = new SentNotificationStore();
+    private final GetNotificationsByPartyHandler handler = new GetNotificationsByPartyHandler(store);
 
     @Test
-    void doHandle_returnsEmptyList() {
+    void doHandle_returnsMessagesRecordedForTheParty() {
+        UUID partyId = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        store.recordSent(notificationId, partyId, "EMAIL", "Welcome", "Hello");
+
+        var query = GetNotificationsByPartyQuery.builder()
+                .partyId(partyId)
+                .page(0)
+                .size(20)
+                .build();
+
+        StepVerifier.create(handler.doHandle(query))
+                .assertNext(list -> {
+                    assertThat(list).hasSize(1);
+                    assertThat(list.get(0).getNotificationId()).isEqualTo(notificationId);
+                    assertThat(list.get(0).getSubject()).isEqualTo("Welcome");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void doHandle_returnsEmptyListWhenPartyHasNoMessages() {
         var query = GetNotificationsByPartyQuery.builder()
                 .partyId(UUID.randomUUID())
                 .page(0)

@@ -18,17 +18,38 @@
 package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
 import io.fireflysoftware.domain.common.notifications.core.send.queries.GetNotificationDetailQuery;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class GetNotificationDetailHandlerTest {
 
-    private final GetNotificationDetailHandler handler = new GetNotificationDetailHandler();
+    private final SentNotificationStore store = new SentNotificationStore();
+    private final GetNotificationDetailHandler handler = new GetNotificationDetailHandler(store);
 
     @Test
-    void doHandle_returnsEmpty() {
+    void doHandle_returnsRecordedMessage() {
+        UUID notificationId = UUID.randomUUID();
+        store.recordSent(notificationId, UUID.randomUUID(), "SMS", null, "Code 1234");
+
+        var query = GetNotificationDetailQuery.builder()
+                .notificationId(notificationId)
+                .build();
+
+        StepVerifier.create(handler.doHandle(query))
+                .assertNext(dto -> {
+                    assertThat(dto.getNotificationId()).isEqualTo(notificationId);
+                    assertThat(dto.getBody()).isEqualTo("Code 1234");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void doHandle_emptyWhenMessageWasNotSent() {
         var query = GetNotificationDetailQuery.builder()
                 .notificationId(UUID.randomUUID())
                 .build();

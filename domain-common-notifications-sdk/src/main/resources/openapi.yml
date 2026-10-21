@@ -6,74 +6,9 @@ servers:
 - url: http://localhost:18080
   description: Generated server url
 tags:
-- name: Notification Preferences
-  description: Notification preference management endpoints
 - name: Notifications
   description: Notification orchestration endpoints
 paths:
-  /api/v1/notifications/preferences/{partyId}:
-    get:
-      tags:
-      - Notification Preferences
-      summary: Get notification preferences
-      description: Retrieve notification preferences for a party
-      operationId: getPreferences
-      parameters:
-      - name: partyId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: X-Idempotency-Key
-        in: header
-        description: "Unique key for idempotent requests. If provided, ensures that\
-          \ identical requests with the same key will only be processed once."
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Preferences retrieved successfully
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/NotificationPreferencesDTO"
-    put:
-      tags:
-      - Notification Preferences
-      summary: Update notification preferences
-      description: Update notification preferences for a party
-      operationId: updatePreferences
-      parameters:
-      - name: partyId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: X-Idempotency-Key
-        in: header
-        description: "Unique key for idempotent requests. If provided, ensures that\
-          \ identical requests with the same key will only be processed once."
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                type: boolean
-        required: true
-      responses:
-        "200":
-          description: Preferences updated successfully
-          content:
-            '*/*':
-              schema:
-                type: object
   /api/v1/notifications/send:
     post:
       tags:
@@ -366,13 +301,3 @@ components:
         readAt:
           type: string
           format: date-time
-    NotificationPreferencesDTO:
-      type: object
-      properties:
-        partyId:
-          type: string
-          format: uuid
-        preferences:
-          type: object
-          additionalProperties:
-            type: boolean

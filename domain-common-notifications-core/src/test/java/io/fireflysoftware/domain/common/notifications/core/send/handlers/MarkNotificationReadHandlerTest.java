@@ -17,24 +17,47 @@
 
 package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
+import io.fireflysoftware.domain.common.notifications.core.send.NotificationNotFoundException;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.MarkNotificationReadCommand;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class MarkNotificationReadHandlerTest {
 
-    private final MarkNotificationReadHandler handler = new MarkNotificationReadHandler();
+    private final SentNotificationStore store = new SentNotificationStore();
+    private final MarkNotificationReadHandler handler = new MarkNotificationReadHandler(store);
 
     @Test
-    void doHandle_completesSuccessfully() {
+    void doHandle_marksThePartyMessageRead() {
+        UUID partyId = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        store.recordSent(notificationId, partyId, "EMAIL", "Welcome", "Hello");
+
+        var cmd = MarkNotificationReadCommand.builder()
+                .notificationId(notificationId)
+                .partyId(partyId)
+                .build();
+
+        StepVerifier.create(handler.doHandle(cmd))
+                .verifyComplete();
+
+        assertThat(store.find(notificationId).orElseThrow().isRead()).isTrue();
+    }
+
+    @Test
+    void doHandle_errorsWhenMessageIsMissing() {
         var cmd = MarkNotificationReadCommand.builder()
                 .notificationId(UUID.randomUUID())
                 .partyId(UUID.randomUUID())
                 .build();
 
         StepVerifier.create(handler.doHandle(cmd))
-                .verifyComplete();
+                .expectError(NotificationNotFoundException.class)
+                .verify();
     }
 }

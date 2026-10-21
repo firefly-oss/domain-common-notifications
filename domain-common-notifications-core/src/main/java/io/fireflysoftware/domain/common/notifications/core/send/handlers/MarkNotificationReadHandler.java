@@ -17,26 +17,33 @@
 
 package io.fireflysoftware.domain.common.notifications.core.send.handlers;
 
+import io.fireflysoftware.domain.common.notifications.core.send.NotificationNotFoundException;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.MarkNotificationReadCommand;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import lombok.extern.slf4j.Slf4j;
 import org.fireflyframework.cqrs.annotations.CommandHandlerComponent;
 import org.fireflyframework.cqrs.command.CommandHandler;
 import reactor.core.publisher.Mono;
 
 /**
- * Marks a specific notification as read.
- * <p>
- * TODO: Replace stub with real persistence when notification read-model is available.
- * </p>
+ * Marks one previously sent message as read.
  */
 @CommandHandlerComponent
 @Slf4j
 public class MarkNotificationReadHandler extends CommandHandler<MarkNotificationReadCommand, Void> {
 
+    private final SentNotificationStore sentNotifications;
+
+    public MarkNotificationReadHandler(SentNotificationStore sentNotifications) {
+        this.sentNotifications = sentNotifications;
+    }
+
     @Override
     protected Mono<Void> doHandle(MarkNotificationReadCommand cmd) {
         log.info("Marking notification as read: notificationId={}, partyId={}", cmd.getNotificationId(), cmd.getPartyId());
-        // TODO: Replace stub with core SDK call when notification read-model is available
+        if (!sentNotifications.markRead(cmd.getNotificationId(), cmd.getPartyId())) {
+            return Mono.error(new NotificationNotFoundException(cmd.getNotificationId()));
+        }
         return Mono.empty();
     }
 }

@@ -21,6 +21,7 @@ import io.fireflysoftware.common.platform.notification.services.sdk.api.EmailNot
 import io.fireflysoftware.common.platform.notification.services.sdk.model.EmailResponseDTO;
 import io.fireflysoftware.domain.common.notifications.core.send.commands.AuditEmailNotificationCommand;
 import io.fireflysoftware.domain.common.notifications.core.send.model.DeliveryResult;
+import io.fireflysoftware.domain.common.notifications.core.send.store.SentNotificationStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,7 @@ import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -39,19 +41,22 @@ class AuditEmailHandlerTest {
 
     @Mock private EmailNotificationsApi emailNotificationsApi;
 
+    private SentNotificationStore sentNotifications;
     private AuditEmailHandler handler;
 
     @BeforeEach
     void setUp() {
-        handler = new AuditEmailHandler(emailNotificationsApi);
+        sentNotifications = new SentNotificationStore();
+        handler = new AuditEmailHandler(emailNotificationsApi, sentNotifications);
     }
 
     @Test
     void doHandle_auditSucceeds_returnsNotificationId() {
         UUID expectedId = UUID.randomUUID();
+        UUID partyId = UUID.randomUUID();
 
         AuditEmailNotificationCommand cmd = AuditEmailNotificationCommand.builder()
-                .partyId(UUID.randomUUID())
+                .partyId(partyId)
                 .recipientEmail("test@example.com")
                 .subject("Welcome")
                 .body("Hello, welcome to Firefly!")
@@ -66,6 +71,14 @@ class AuditEmailHandlerTest {
         StepVerifier.create(handler.doHandle(cmd))
                 .expectNext(expectedId)
                 .verifyComplete();
+
+        assertThat(sentNotifications.find(expectedId)).get().satisfies(stored -> {
+            assertThat(stored.getPartyId()).isEqualTo(partyId);
+            assertThat(stored.getChannel()).isEqualTo("EMAIL");
+            assertThat(stored.getSubject()).isEqualTo("Welcome");
+            assertThat(stored.getBody()).isEqualTo("Hello, welcome to Firefly!");
+            assertThat(stored.isRead()).isFalse();
+        });
     }
 
     @Test

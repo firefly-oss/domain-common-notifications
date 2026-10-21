@@ -15,27 +15,19 @@
  */
 
 
-package io.fireflysoftware.domain.common.notifications.core.send.model;
+package io.fireflysoftware.domain.common.notifications.core.send;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.Map;
 import java.util.UUID;
 
 /**
- * Notification preferences for a party.
+ * Raised when an inbox operation addresses a message this service did not send for the party.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class NotificationPreferencesDTO {
+public class NotificationNotFoundException extends RuntimeException {
 
-    private UUID partyId;
-
-    /** Channel preferences (e.g., "EMAIL" -> true, "SMS" -> false). */
-    private Map<String, Boolean> preferences;
+    /**
+     * @param notificationId message the caller asked for
+     */
+    public NotificationNotFoundException(UUID notificationId) {
+        super("Notification " + notificationId + " was not found");
+    }
 }
