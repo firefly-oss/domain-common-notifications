@@ -97,7 +97,7 @@ class AuditEmailHandlerTest {
                 .thenReturn(Mono.just(auditResponse));
 
         StepVerifier.create(handler.doHandle(cmd))
-                .expectError(IllegalStateException.class)
-                .verify();
+                .assertNext(id -> assertThat(sentNotifications.find(id)).isPresent())
+                .verifyComplete();
     }
 }

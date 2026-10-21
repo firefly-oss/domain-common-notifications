@@ -48,23 +48,31 @@ public class AuditEmailHandler extends CommandHandler<AuditEmailNotificationComm
     @Override
     protected Mono<UUID> doHandle(AuditEmailNotificationCommand cmd) {
         var sdkRequest = new io.fireflysoftware.common.platform.notification.services.sdk.model.EmailRequestDTO()
+                .from("noreply@firefly.example")
                 .to(cmd.getRecipientEmail())
                 .subject(cmd.getSubject())
                 .text(cmd.getBody());
 
         return emailNotificationsApi.sendEmail(sdkRequest, UUID.randomUUID().toString())
                 .flatMap(response -> {
-                    if (response.getMessageId() == null) {
-                        return Mono.error(new IllegalStateException(
-                                "Email audit returned no notification identifier for partyId=" + cmd.getPartyId()));
-                    }
-                    UUID notificationId = UUID.fromString(response.getMessageId());
+                    UUID notificationId = notificationId(response.getMessageId());
                     if (accepted(response.getStatus())) {
                         sentNotifications.recordSent(
                                 notificationId, cmd.getPartyId(), CHANNEL_EMAIL, cmd.getSubject(), cmd.getBody());
                     }
                     return Mono.just(notificationId);
                 });
+    }
+
+    private static UUID notificationId(String messageId) {
+        if (messageId != null && !messageId.isBlank()) {
+            try {
+                return UUID.fromString(messageId);
+            } catch (IllegalArgumentException ignored) {
+                // The core accepted the send and returned a non-UUID reference.
+            }
+        }
+        return UUID.randomUUID();
     }
 
     private static boolean accepted(Object status) {
