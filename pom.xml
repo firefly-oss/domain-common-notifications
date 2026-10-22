@@ -7,13 +7,13 @@
     <parent>
         <groupId>io.fireflysoftware</groupId>
         <artifactId>firefly-parent</artifactId>
-        <version>26.10.5</version>
+        <version>26.10.6</version>
         <relativePath/>
     </parent>
 
     <artifactId>domain-common-notifications</artifactId>
     <name>domain-common-notifications</name>
-    <version>26.10.5</version>
+    <version>26.10.6</version>
     <packaging>pom</packaging>
     <modules>
         <module>domain-common-notifications-core</module>
